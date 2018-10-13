@@ -59,14 +59,14 @@ int get() {
   LPVOID teraBase = me.modBaseAddr;
   DWORD teraSize = me.modBaseSize;
 
-  pGObjects = dwFindPattern((DWORD)teraBase, teraSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK) + GOBJECTS_OFFSET;
+  pGObjects = dwFindPattern((DWORD)teraBase, teraSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK);
   if(pGObjects == NULL) return 1;
 
-  pGNames = dwFindPattern((DWORD)teraBase, teraSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK) + GNAMES_OFFSET;
+  pGNames = dwFindPattern((DWORD)teraBase, teraSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
   if(pGNames == NULL) return 2;
 
-  GObjects = (TArray<UObjectEx*>*)(*(DWORD*)pGObjects);
-  GNames = (TArray<FNameEntry*>*)(*(DWORD*)pGNames);
+  GObjects = (TArray<UObjectEx*>*)(*(DWORD*)(pGObjects + GOBJECTS_OFFSET));
+  GNames = (TArray<FNameEntry*>*)(*(DWORD*)(pGNames + GNAMES_OFFSET));
   return 3;
 }
 
