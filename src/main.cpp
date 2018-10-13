@@ -29,12 +29,12 @@ ___:0069A193 8B 0C 81                                mov     ecx, [ecx+eax*4]
 
 */
 
-#define GOBJECTS_PATTERN "\x3B\x35\x00\x00\x00\x00\x7D\x22\xA1\x00\x00\x00\x00\x6A\x01\x8B\x34\xB0"
-#define GOBJECTS_MASK    "xx????xxx????xxxxx"
+#define GOBJECTS_PATTERN "\x00\x00\x00\x00\x6A\x01\x8B\x34\xB0\x8B\xCE\xE8\x00\x00\x00\x00"
+#define GOBJECTS_MASK    "????xxxxxxxx????"
 #define GOBJECTS_OFFSET  0x9
 
-#define GNAMES_PATTERN   "\x8B\x75\x08\x57\x8B\xF9\x8B\x0D\x00\x00\x00\x00\x56\x8B\x07\x8B\x0C\x81"
-#define GNAMES_MASK     "xxxxxxxx????xxxxxx"
+#define GNAMES_PATTERN   "\x00\x00\x00\x00\xFF\x75\x08\xC7\x45\x00\x00\x00\x00\x00\x8B\x0C\x91\xE8\x00\x00\x00\x00"
+#define GNAMES_MASK     "????xxxxx?????xxxx????"
 #define GNAMES_OFFSET    0x8
 
 char *TERA_EXE = "TERA.exe";
@@ -46,6 +46,11 @@ TArray<FNameEntry*> *GNames = NULL;
 
 using namespace v8;
 using namespace node;
+
+__declspec(naked) void findObject() {
+  //int count = GObjects->Count;
+  __asm { ret }
+}
 
 int get() {
   GObjects = NULL;
@@ -68,14 +73,17 @@ int get() {
   BOOL bStatus = ReadProcessMemory(hProcess, teraBase, pData, teraSize, NULL);
   if(bStatus == 0) return 3;
 
-  pGObjects = dwFindPattern((DWORD)pData, teraSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK);
+  pGObjects = *(DWORD*)dwFindPattern((DWORD)pData, teraSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK);
   if(pGObjects == NULL) return 4;
 
-  pGNames = dwFindPattern((DWORD)pData, teraSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
+  pGNames = *(DWORD*)dwFindPattern((DWORD)pData, teraSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
   if(pGNames == NULL) return 5;
 
   GObjects = (TArray<UObjectEx*>*)(*(DWORD*)(pGObjects + GOBJECTS_OFFSET));
   GNames = (TArray<FNameEntry*>*)(*(DWORD*)(pGNames + GNAMES_OFFSET));
+
+  injectCode(pID, findObject);
+
   return 6;
 }
 

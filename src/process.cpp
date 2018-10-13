@@ -65,3 +65,25 @@ BOOL injectDLL(char *szProcess, char *szDLL) {
 
   return TRUE;
 }
+
+BOOL injectCode(DWORD pID, LPVOID code) {
+  HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, 0, pID);
+  if (hProcess == NULL)  return FALSE;
+
+  SIZE_T len = sizeof(code);
+  LPVOID pRemoteCode = VirtualAllocEx(hProcess, nullptr, len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+  if (pRemoteCode == NULL) return FALSE;
+
+  BOOL bStatus = WriteProcessMemory(hProcess, pRemoteCode, code, len, nullptr);
+  if (bStatus == 0) return FALSE;
+
+  HANDLE hThreadId = CreateRemoteThread(hProcess, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pRemoteCode), NULL, NULL, nullptr);
+  if (hThreadId == NULL) return FALSE;
+
+  WaitForSingleObject(hThreadId, INFINITE);
+
+  VirtualFreeEx(hProcess, pRemoteCode, len, MEM_RELEASE);
+  CloseHandle(hProcess);
+
+  return TRUE;
+}
