@@ -1,18 +1,18 @@
 #include <node.h>
 
 namespace {
-	using namespace v8;
-	using namespace node;
+  using namespace v8;
+  using namespace node;
 
-	class TeraInternals {
+  class TeraInternals {
 
-		TeraInternals() {
+    TeraInternals() {
       return;
-		}
+    }
 
-		void get() {
+    void get() {
       return;
-		}
+    }
     
   };
   
