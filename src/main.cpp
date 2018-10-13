@@ -59,15 +59,24 @@ int get() {
   LPVOID teraBase = me.modBaseAddr;
   DWORD teraSize = me.modBaseSize;
 
-  pGObjects = dwFindPattern((DWORD)teraBase, teraSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK);
-  if(pGObjects == NULL) return 1;
+  HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, 0, pID);
+  if(hProcess == NULL) return 1;
 
-  pGNames = dwFindPattern((DWORD)teraBase, teraSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
-  if(pGNames == NULL) return 2;
+  LPVOID pData = VirtualAlloc(NULL, teraSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+  if(pData == NULL) return 2;
+
+  BOOL bStatus = ReadProcessMemory(hProcess, teraBase, pData, teraSize, NULL);
+  if(bStatus == 0) return 3;
+
+  pGObjects = dwFindPattern((DWORD)pData, teraSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK);
+  if(pGObjects == NULL) return 4;
+
+  pGNames = dwFindPattern((DWORD)pData, teraSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
+  if(pGNames == NULL) return 5;
 
   GObjects = (TArray<UObjectEx*>*)(*(DWORD*)(pGObjects + GOBJECTS_OFFSET));
   GNames = (TArray<FNameEntry*>*)(*(DWORD*)(pGNames + GNAMES_OFFSET));
-  return 3;
+  return 6;
 }
 
 void Get(const FunctionCallbackInfo<Value>& args) {
