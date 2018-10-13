@@ -1,5 +1,4 @@
 #pragma once
-#include <windows.h>
 
 #pragma pack(push, 1)
 template<class T> struct TArray {
