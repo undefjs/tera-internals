@@ -22,8 +22,51 @@ using namespace node;
 
 char * szModulePath;
 
+void initPipe() {
+  // https://stackoverflow.com/questions/26561604/create-named-pipe-c-windows
+
+  char buffer[1024] = { 0 };
+  HANDLE hPipe = CreateNamedPipe(
+    "\\\\.\\pipe\\TeraGuard",
+    PIPE_ACCESS_DUPLEX,
+    PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+    1,
+    1024 * 16,
+    1024 * 16,
+    NMPWAIT_USE_DEFAULT_WAIT,
+    NULL
+  );
+
+  while(hPipe != INVALID_HANDLE_VALUE) {
+    if(ConnectNamedPipe(hPipe, NULL) != FALSE) {
+      DWORD dwRead = NULL;
+      while(ReadFile(hPipe, buffer, sizeof(buffer) - 1, &dwRead, NULL) != FALSE) {
+        buffer[dwRead] = '\0';
+        MessageBoxA(0, buffer, 0, 0);
+      }
+    }
+
+    DisconnectNamedPipe(hPipe);
+  }
+
+}
+
+int pipeHello() {
+  HANDLE hPipe = CreateFile("\\\\.\\pipe\\TeraGuard", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if(hPipe == INVALID_HANDLE_VALUE) return 0;
+
+  DWORD dwWritten = NULL;
+  WriteFile(hPipe, "Hello Pipe\n", 12, &dwWritten, NULL);
+
+  CloseHandle(hPipe);
+  return 1;
+}
+
 int initGuard(char * szDLL) {
-  return injectDLL(TERA_EXE, szDLL);
+  CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)initPipe, NULL, 0, NULL);
+  Sleep(5000);
+  return pipeHello();
+  //return injectDLL(TERA_EXE, szDLL);
 }
 
 void InitGuard(const FunctionCallbackInfo<Value>& args) {
