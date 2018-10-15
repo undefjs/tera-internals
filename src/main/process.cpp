@@ -1,3 +1,6 @@
+#include <windows.h>
+#include <tlhelp32.h>
+
 DWORD getPID(char *szName) {
   DWORD pID = 0;
   HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);

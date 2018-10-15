@@ -33,6 +33,7 @@ struct FScriptDelegate {
 struct FString : public TArray<wchar_t> {};
 #pragma pack(pop, 1)
 
+#include <windows.h>
 #include "SDK\Core_structs.h"
 #include "SDK\Core_classes.h"
 #include "SDK\Core_f_structs.h"

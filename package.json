@@ -19,5 +19,6 @@
   "bugs": {
     "url": "https://github.com/undefjs/tera-internals/issues"
   },
-  "homepage": "https://github.com/undefjs/tera-internals#readme"
+  "homepage": "https://github.com/undefjs/tera-internals#readme",
+  "dependencies": {}
 }

@@ -1,26 +1,32 @@
+#include <cstdio>
 #include <windows.h>
+#include "socket.h"
 
-void pipeHello() {
-  HANDLE hPipe = CreateFile("\\\\.\\pipe\\TeraGuard", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if(hPipe == INVALID_HANDLE_VALUE) return;
+char * REPLY_ERROR = "{ \"error\": true }\0";
 
-  DWORD dwWritten = NULL;
-  WriteFile(hPipe, "Hello Pipe\n", 12, &dwWritten, NULL);
+void onReceive(SOCKET s, char * buf, int len) {
+  if((_stricmp(buf, "print") == 0)) {
+    char buffer[MAX_PATH];
+    snprintf(buffer, MAX_PATH, "{ \"error\": false, \"content\": %d }", len);
+    socketSend(s, buffer, strlen(buffer));
+  }
+  else {
+    socketSend(s, REPLY_ERROR, strlen(REPLY_ERROR));
+  }
+}
 
-  CloseHandle(hPipe);
+void setupServer() {
+  socketListen(onReceive);
 }
 
 BOOL WINAPI DllMain(HMODULE hModule, DWORD ulReason, LPVOID lpReserved) {
   switch (ulReason) {
   case DLL_PROCESS_ATTACH: {
-    //MessageBoxA(0, "hi :)", 0, 0);
-    //CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)pipeHello, NULL, 0, NULL);
-    pipeHello();
+    CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)setupServer, NULL, 0, NULL);
     break;
   }
   case DLL_PROCESS_DETACH:
     break;
   }
-
   return TRUE;
 }
