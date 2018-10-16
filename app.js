@@ -17,7 +17,7 @@ async function injectDLL() {
   if(os.platform() !== 'win32')
     throw new Error('Can\'t inject dll from this OS, do it manually or run with --no-inject??');
   
-  const list = await find('name', TERA_EXE.toLowerCase());
+  const list = await find('name', TERA_EXE);
   
   if(!list.length)
     throw new Error(`Process '${TERA_EXE}' not found`);

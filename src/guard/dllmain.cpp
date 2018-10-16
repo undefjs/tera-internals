@@ -13,7 +13,7 @@ void onReceive(SOCKET s, char * buf, int len) {
     snprintf(buffer, MAX_PATH, "{ \"error\": false, \"content\": %s }", ret.buffer);
     socketSend(s, buffer, strlen(buffer));
   }
-  if((_stricmp(buf, "get fov") == 0)) {
+  else if((_stricmp(buf, "get fov") == 0)) {
     fnInit();
     FN_RETURN ret = fnGetFOV();
     snprintf(buffer, MAX_PATH, "{ \"error\": false, \"content\": %s }", ret.buffer);
