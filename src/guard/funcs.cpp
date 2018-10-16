@@ -118,10 +118,12 @@ FN_RETURN fnFly() {
   ret.error = true;
 
   auto cheatManager = (UCheatManager*)findObject("CheatManager Start.TheWorld.PersistentLevel.S1PlayerController.CheatManager");
-  auto pFnFly = (UFunction*)findObject("Function Engine.CheatManager.Fly");
+  auto pFnSloMo = (UFunction*)findObject("Function Engine.CheatManager.SloMo");
 
-	UCheatManager_execFly_Parms Fly_Parms;
-	cheatManager->ProcessEvent(pFnFly, &Fly_Parms, NULL);
+	UCheatManager_execSloMo_Parms SloMo_Parms;
+	SloMo_Parms.T = 5.0f;
+
+	cheatManager->ProcessEvent(pFnSloMo, &SloMo_Parms, NULL);
 
   char buffer[MAX_PATH];
   snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
