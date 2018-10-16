@@ -1,4 +1,4 @@
-typedef struct FN_RETURN {
+struct FN_RETURN {
   bool error;
   char * buffer;
 };

@@ -5,9 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "main": "node-gyp rebuild && copy .\\build\\Release\\terainternals.node .\\bin\\terainternals.node",
-    "guard": "node-gyp rebuild --arch=ia32 && copy .\\build\\Release\\teraguard.dll .\\bin\\teraguard32.dll",
-    "install": "npm run main && npm run guard"
+    "build": "node-gyp rebuild --arch=ia32 && copy .\\build\\Release\\teraguard.dll .\\bin\\teraguard.dll",
+    "install": "echo Installing dependencies.."
   },
   "repository": {
     "type": "git",
@@ -20,5 +19,7 @@
     "url": "https://github.com/undefjs/tera-internals/issues"
   },
   "homepage": "https://github.com/undefjs/tera-internals#readme",
-  "dependencies": {}
+  "dependencies": {
+    "find-process": "^1.1.3"
+  }
 }

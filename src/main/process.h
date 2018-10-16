@@ -1,1 +1,0 @@
-int injectDLL(char *, char *);

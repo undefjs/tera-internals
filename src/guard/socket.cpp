@@ -32,7 +32,6 @@ int socketListen(recv_handler onRecv) {
   struct addrinfo *result = NULL;
   struct addrinfo hints;
 
-  int iSendResult;
   char recvbuf[DEFAULT_BUFLEN];
   int recvbuflen = DEFAULT_BUFLEN;
 
