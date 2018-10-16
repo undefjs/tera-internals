@@ -1,12 +1,11 @@
 #include <node.h>
 #include <windows.h>
-//#include "../sdk.h"
 #include "process.h"
 
 using namespace v8;
 using namespace node;
 
-char *TERA_EXE = "TERA.exe";
+char * TERA_EXE = "TERA.exe";
 
 int initGuard(char * szDLL) {
   int ret = injectDLL(TERA_EXE, szDLL);

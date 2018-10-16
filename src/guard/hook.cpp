@@ -1,11 +1,25 @@
+#include <windows.h>
+#include <tlhelp32.h>
+#include "hook.h"
 
-#define GOBJECTS_PATTERN "\x00\x00\x00\x00\x6A\x01\x8B\x34\xB0\x8B\xCE\xE8\x00\x00\x00\x00"
-#define GOBJECTS_MASK    "????xxxxxxxx????"
-#define GOBJECTS_OFFSET  0x9
+BOOL getModule(DWORD dwPID, char *szName, MODULEENTRY32 &module) {
+  BOOL ret = false;
+  HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPID);
 
-#define GNAMES_PATTERN   "\x00\x00\x00\x00\xFF\x75\x08\xC7\x45\x00\x00\x00\x00\x00\x8B\x0C\x91\xE8\x00\x00\x00\x00"
-#define GNAMES_MASK     "????xxxxx?????xxxx????"
-#define GNAMES_OFFSET    0x8
+  MODULEENTRY32 me = { sizeof(me) };
+  if (Module32First(hSnapshot, &me)) {
+    do {
+      if (_stricmp(me.szModule, szName) == 0) {
+        ret = true;
+        module = me;
+        break;
+      }
+    } while (Module32Next(hSnapshot, &me));
+  }
+
+  CloseHandle(hSnapshot);
+  return ret;
+}
 
 bool bDataCompare(const BYTE *pData, const BYTE *bMask, const char *szMask) {
   for (; *szMask; ++szMask, ++pData, ++bMask)
@@ -19,11 +33,4 @@ DWORD dwFindPattern(DWORD dwAddress, DWORD dwLen, BYTE *bMask, char *szMask) {
     if (bDataCompare((BYTE*)(dwAddress + i), bMask, szMask))
       return (DWORD)(dwAddress + i);
   return 0;
-}
-
-DWORD absAddr(DWORD rel1, DWORD rel2) {
-  DWORD tmp1 = *((DWORD *)(rel1 + 1));
-  DWORD tmp2 = rel1 + tmp1 + 5;
-  DWORD tmp3 = tmp2 - rel2 - 5;
-  return tmp3;
 }

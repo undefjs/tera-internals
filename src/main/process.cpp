@@ -20,25 +20,6 @@ DWORD getPID(char *szName) {
   return pID;
 }
 
-BOOL getModule(DWORD dwPID, char *szName, MODULEENTRY32 &module) {
-  BOOL ret = false;
-  HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPID);
-
-  MODULEENTRY32 me = { sizeof(me) };
-  if (Module32First(hSnapshot, &me)) {
-    do {
-      if (_stricmp(me.szModule, szName) == 0) {
-        ret = true;
-        module = me;
-        break;
-      }
-    } while (Module32Next(hSnapshot, &me));
-  }
-
-  CloseHandle(hSnapshot);
-  return ret;
-}
-
 int injectDLL(char *szProcess, char *szDLL) {
   unsigned int pID = (unsigned int)getPID(szProcess);
   if(!pID) return 0;
