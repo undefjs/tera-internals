@@ -132,3 +132,33 @@ FN_RETURN fnSlow() {
   ret.buffer = buffer;
   return ret;
 }
+
+FN_RETURN fnFly() {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto playerController = (AS1PlayerController*)findObject("S1PlayerController Start.TheWorld.PersistentLevel.S1PlayerController");
+  auto pFnEnableCheats = (UFunction*)findObject("Function Engine.PlayerController.EnableCheats");
+
+	APlayerController_execEnableCheats_Parms EnableCheats_Parms;
+	playerController->ProcessEvent(pFnEnableCheats, &EnableCheats_Parms, NULL);
+
+	//---
+
+  auto cheatManager = (UCheatManager*)findObject("CheatManager Start.TheWorld.PersistentLevel.S1PlayerController.CheatManager");
+  auto pFnFly = (UFunction*)findObject("Function Engine.CheatManager.Fly");
+
+	UCheatManager_execFly_Parms Fly_Parms;
+	cheatManager->ProcessEvent(pFnFly, &Fly_Parms, NULL);
+
+  //---
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+

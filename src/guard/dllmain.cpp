@@ -22,6 +22,11 @@ void onReceive(SOCKET s, char * buf, int len) {
     socketSend(s, buffer, strlen(buffer));
   }
   else if(cmd == "slow") {
+    FN_RETURN ret = fnSlow();
+    snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
+    socketSend(s, buffer, strlen(buffer));
+  }
+  else if(cmd == "fly") {
     FN_RETURN ret = fnFly();
     snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
     socketSend(s, buffer, strlen(buffer));
