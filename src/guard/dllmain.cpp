@@ -3,20 +3,27 @@
 #include "socket.h"
 #include "funcs.h"
 
-char * REPLY_ERROR = "{ \"error\": true }\0";
+#include "include/json.hpp" //https://github.com/nlohmann/json
+using json = nlohmann::json;
+
+char * REPLY_ERROR = R"({ "error": true })";
+char * REPLY_SUCCESS = R"({ "error": false, "content": %s })";
 
 void onReceive(SOCKET s, char * buf, int len) {
   char buffer[MAX_PATH];
 
-  if((_stricmp(buf, "init") == 0)) {
-    FN_RETURN ret = fnInit();
-    snprintf(buffer, MAX_PATH, "{ \"error\": false, \"content\": %s }", ret.buffer);
+  std::string str = std::string(buf);
+  auto j = json::parse(str);
+  auto cmd = j["cmd"];
+
+  if(cmd == "get") {
+    FN_RETURN ret = fnGetFOV();
+    snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
     socketSend(s, buffer, strlen(buffer));
   }
-  else if((_stricmp(buf, "get fov") == 0)) {
-    fnInit();
-    FN_RETURN ret = fnGetFOV();
-    snprintf(buffer, MAX_PATH, "{ \"error\": false, \"content\": %s }", ret.buffer);
+  else if(cmd == "fly") {
+    FN_RETURN ret = fnFly();
+    snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
     socketSend(s, buffer, strlen(buffer));
   }
   else {
@@ -32,6 +39,7 @@ void setupServer() {
 BOOL WINAPI DllMain(HMODULE hModule, DWORD ulReason, LPVOID lpReserved) {
   switch (ulReason) {
   case DLL_PROCESS_ATTACH: {
+    if(!InitEngine()) return FALSE;
     CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)setupServer, NULL, 0, NULL);
     break;
   }

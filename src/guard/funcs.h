@@ -3,5 +3,6 @@ struct FN_RETURN {
   char * buffer;
 };
 
-FN_RETURN fnInit();
+bool InitEngine();
 FN_RETURN fnGetFOV();
+FN_RETURN fnFly();

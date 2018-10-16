@@ -10,31 +10,19 @@ char * TERA_EXE = "TERA.exe";
 TArray<UObjectEx*> *GObjects = NULL;
 TArray<FNameEntry*> *GNames = NULL;
 
-FN_RETURN fnInit() {
-  FN_RETURN ret = { 0 };
-  ret.error = true;
-
+bool InitEngine() {
   MODULEENTRY32 me = { 0 };
-  getModule(GetCurrentProcessId(), TERA_EXE, me);
+  if(!getModule(GetCurrentProcessId(), TERA_EXE, me)) return false;
 
   DWORD pGObjects = *(DWORD*)dwFindPattern((DWORD)me.modBaseAddr, me.modBaseSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK);
-  if(pGObjects == NULL) return ret;
+  if(pGObjects == NULL) return false;
 
   DWORD pGNames = *(DWORD*)dwFindPattern((DWORD)me.modBaseAddr, me.modBaseSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
-  if(pGNames == NULL) return ret;
+  if(pGNames == NULL) return false;
 
-  GObjects = (TArray<UObjectEx*>*)(*(DWORD*)(dwFindPattern((DWORD)me.modBaseAddr, me.modBaseSize, (BYTE*)GOBJECTS_PATTERN, GOBJECTS_MASK)));
-  GNames = (TArray<FNameEntry*>*)(*(DWORD*)(dwFindPattern((DWORD)me.modBaseAddr, me.modBaseSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK)));
-
-  //GObjects = (TArray<UObjectEx*>*)(*(DWORD*)pGObjects);
-  //GNames = (TArray<FNameEntry*>*)(*(DWORD*)pGNames);
-
-  char buffer[MAX_PATH];
-  snprintf(buffer, MAX_PATH, "{ \"GObjects\": %d, \"GNames\": %d }", (int)pGObjects, (int)pGNames);
-
-  ret.error = false;
-  ret.buffer = buffer;
-  return ret;
+  GObjects = (TArray<UObjectEx*>*)pGObjects;
+  GNames = (TArray<FNameEntry*>*)pGNames;
+  return true;
 }
 
 //---------------------
@@ -113,11 +101,30 @@ FN_RETURN fnGetFOV() {
 
   auto camera = (AS1PlayerCamera*)findObject("S1PlayerCamera Start.TheWorld.PersistentLevel.S1PlayerCamera");
   auto pFnGetFOVAngle = (UFunction*)findObject("Function Engine.Camera.GetFOVAngle");
+
   ACamera_execGetFOVAngle_Parms GetFOVAngle_Parms;
   camera->ProcessEvent(pFnGetFOVAngle, &GetFOVAngle_Parms, NULL);
 
   char buffer[MAX_PATH];
   snprintf(buffer, MAX_PATH, "{ \"FOV\": %.2f }", GetFOVAngle_Parms.ReturnValue);
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnFly() {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto cheatManager = (UCheatManager*)findObject("CheatManager Start.TheWorld.PersistentLevel.S1PlayerController.CheatManager");
+  auto pFnFly = (UFunction*)findObject("Function Engine.CheatManager.Fly");
+
+	UCheatManager_execFly_Parms Fly_Parms;
+	cheatManager->ProcessEvent(pFnFly, &Fly_Parms, NULL);
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
 
   ret.error = false;
   ret.buffer = buffer;
