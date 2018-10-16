@@ -5,4 +5,4 @@ struct FN_RETURN {
 
 bool InitEngine();
 FN_RETURN fnGetFOV();
-FN_RETURN fnFly();
+FN_RETURN fnSlow();

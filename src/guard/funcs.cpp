@@ -113,7 +113,7 @@ FN_RETURN fnGetFOV() {
   return ret;
 }
 
-FN_RETURN fnFly() {
+FN_RETURN fnSlow() {
   FN_RETURN ret = { 0 };
   ret.error = true;
 
@@ -121,7 +121,7 @@ FN_RETURN fnFly() {
   auto pFnSloMo = (UFunction*)findObject("Function Engine.CheatManager.SloMo");
 
 	UCheatManager_execSloMo_Parms SloMo_Parms;
-	SloMo_Parms.T = 5.0f;
+	SloMo_Parms.T = 0.25f;
 
 	cheatManager->ProcessEvent(pFnSloMo, &SloMo_Parms, NULL);
 
