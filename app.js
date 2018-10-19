@@ -47,26 +47,20 @@ async function injectDLL() {
     log('- Socket connected');
   
     function replHandler(cmd, context, filename, callback) {
-      s.once('data', data => {
-        callback(null, JSON.parse(data));
-      });
-      s.once('error', e => {
-        replServer.close();
-        log('- Connection error: %s', e.message);
-      });
-      s.once('close', () => {
-        replServer.close();
-        log('- Connection closed');
-      });
-  
-      const msg = cmd.slice(0, -1);
-      s.write(msg);
+      s.once('data', data => callback(null, JSON.parse(data)));
+      s.write(cmd);
     }
     
     const replServer = repl.start({ prompt: '> ', eval: replHandler });
+    replServer.on('exit', () => s.destroy());
     
-    replServer.on('exit', () => {
-      s.destroy();
+    s.on('error', e => {
+      replServer.close();
+      log('- Connection error: %s', e.message);
+    });
+    s.on('close', () => {
+      replServer.close();
+      log('- Connection closed');
     });
     
   });

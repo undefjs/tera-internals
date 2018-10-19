@@ -6,33 +6,50 @@
 #include "include/json.hpp" //https://github.com/nlohmann/json
 using json = nlohmann::json;
 
-char * REPLY_ERROR = R"({ "error": true })";
+typedef FN_RETURN (*pFunc)(json j);
+std::map<std::string, pFunc> FUNC_MAP {
+  { "getfov", fnGetFOV },
+  { "setfov", fnSetFOV },
+  { "slowmo", fnSlow },
+  { "fly", fnFly },
+  { "spawn", fnSpawn },
+  { "dump", fnDumpObjects },
+  { "get", fnGetObject }
+};
+
+char * REPLY_ERROR = R"({ "error": true, "reason": "%s." })";
 char * REPLY_SUCCESS = R"({ "error": false, "content": %s })";
 
+std::string recvBuffer;
+std::string recvDelimiter = "\n";
+
 void onReceive(SOCKET s, char * buf, int len) {
-  char buffer[MAX_PATH];
+  recvBuffer += std::string(buf);
 
-  std::string str = std::string(buf);
-  auto j = json::parse(str);
-  auto cmd = j["cmd"];
+  size_t pos = 0;
+  while((pos = recvBuffer.find(recvDelimiter)) != std::string::npos) {
+    std::string token = recvBuffer.substr(0, pos);
+    recvBuffer.erase(0, pos + recvDelimiter.length());
 
-  if(cmd == "get") {
-    FN_RETURN ret = fnGetFOV();
-    snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
-    socketSend(s, buffer, strlen(buffer));
-  }
-  else if(cmd == "slow") {
-    FN_RETURN ret = fnSlow();
-    snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
-    socketSend(s, buffer, strlen(buffer));
-  }
-  else if(cmd == "fly") {
-    FN_RETURN ret = fnFly();
-    snprintf(buffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
-    socketSend(s, buffer, strlen(buffer));
-  }
-  else {
-    socketSend(s, REPLY_ERROR, strlen(REPLY_ERROR));
+    char sendBuffer[MAX_PATH];
+
+    json j = json::parse(token, nullptr, false);
+    if(j.is_discarded()) {
+      snprintf(sendBuffer, MAX_PATH, REPLY_ERROR, "Bad JSON request");
+      socketSend(s, sendBuffer, strlen(sendBuffer));
+      continue;
+    }
+
+    pFunc fn = FUNC_MAP[j["cmd"].get<std::string>()];
+    if(fn == NULL) {
+      snprintf(sendBuffer, MAX_PATH, REPLY_ERROR, "Unknown command");
+      socketSend(s, sendBuffer, strlen(sendBuffer));
+      continue;
+    }
+
+    FN_RETURN ret = (*fn)(j);
+    snprintf(sendBuffer, MAX_PATH, REPLY_SUCCESS, ret.buffer);
+    socketSend(s, sendBuffer, strlen(sendBuffer));
   }
 
 }

@@ -20,6 +20,9 @@ bool InitEngine() {
   DWORD pGNames = *(DWORD*)dwFindPattern((DWORD)me.modBaseAddr, me.modBaseSize, (BYTE*)GNAMES_PATTERN, GNAMES_MASK);
   if(pGNames == NULL) return false;
 
+  DWORD pS1Game = *(DWORD*)dwFindPattern((DWORD)me.modBaseAddr, me.modBaseSize, (BYTE*)S1GAME_PATTERN, S1GAME_MASK);
+  if(pS1Game == NULL) return false;
+
   GObjects = (TArray<UObjectEx*>*)pGObjects;
   GNames = (TArray<FNameEntry*>*)pGNames;
   return true;
@@ -35,6 +38,10 @@ char * getName(int idx) {
 };
 
 char * getFullName(UObjectEx *obj) {
+  if(obj->Class && !obj->Outer) {
+    return getName(obj->Name.Index);
+  }
+
   if (obj->Class && obj->Outer) {
     static char cOutBuffer[512];
     char cTmpBuffer[512];
@@ -95,7 +102,7 @@ void dumpObjects() {
   fclose(fp);
 }
 
-FN_RETURN fnGetFOV() {
+FN_RETURN fnGetFOV(json j) {
   FN_RETURN ret = { 0 };
   ret.error = true;
 
@@ -113,7 +120,26 @@ FN_RETURN fnGetFOV() {
   return ret;
 }
 
-FN_RETURN fnSlow() {
+FN_RETURN fnSetFOV(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto camera = (AS1PlayerCamera*)findObject("S1PlayerCamera Start.TheWorld.PersistentLevel.S1PlayerCamera");
+  auto pFnSetFOV = (UFunction*)findObject("Function Engine.Camera.SetFOV");
+
+	ACamera_execSetFOV_Parms SetFOV_Parms;
+	SetFOV_Parms.NewFOV = j["value"].get<float>();
+  camera->ProcessEvent ( pFnSetFOV, &SetFOV_Parms, NULL );
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnSlow(json j) {
   FN_RETURN ret = { 0 };
   ret.error = true;
 
@@ -133,9 +159,11 @@ FN_RETURN fnSlow() {
   return ret;
 }
 
-FN_RETURN fnFly() {
+FN_RETURN fnFly(json j) {
   FN_RETURN ret = { 0 };
   ret.error = true;
+
+  dumpObjects();
 
   auto playerController = (AS1PlayerController*)findObject("S1PlayerController Start.TheWorld.PersistentLevel.S1PlayerController");
   auto pFnEnableCheats = (UFunction*)findObject("Function Engine.PlayerController.EnableCheats");
@@ -151,6 +179,8 @@ FN_RETURN fnFly() {
 	UCheatManager_execFly_Parms Fly_Parms;
 	cheatManager->ProcessEvent(pFnFly, &Fly_Parms, NULL);
 
+  playerController->bCheatFlying = true;
+
   //---
 
   char buffer[MAX_PATH];
@@ -161,4 +191,53 @@ FN_RETURN fnFly() {
   return ret;
 }
 
+FN_RETURN fnSpawn(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  //https://docs.unrealengine.com/en-us/Programming/UnrealArchitecture/Actors/Spawning
+
+  auto world = (UCheatManager*)findObject("World Start.TheWorld");
+  //...
+
+  //---
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnDumpObjects(json j) {
+  FN_RETURN ret = { 0 };
+
+  dumpObjects();
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnGetObject(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto str = j["name"].get<std::string>();
+  char *cstr = new char[str.length() + 1];
+  strcpy(cstr, str.c_str());
+
+  UObjectEx * obj = findObject(cstr);
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"address\": %d }", (DWORD)obj);
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
 
