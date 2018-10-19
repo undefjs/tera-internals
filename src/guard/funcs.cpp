@@ -197,7 +197,7 @@ FN_RETURN fnSpawn(json j) {
 
   //https://docs.unrealengine.com/en-us/Programming/UnrealArchitecture/Actors/Spawning
 
-  auto world = (UCheatManager*)findObject("World Start.TheWorld");
+  auto world = (UWorld*)findObject("World Start.TheWorld");
   //...
 
   //---
@@ -241,3 +241,21 @@ FN_RETURN fnGetObject(json j) {
   return ret;
 }
 
+FN_RETURN fnSetFPS(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto fps = j["value"].get<float>();
+
+  auto gameEngine = (UGameEngine*)findObject("GameEngine Transient.GameEngine");
+  gameEngine->bSmoothFrameRate = true;
+  gameEngine->MinSmoothedFrameRate = fps;
+  gameEngine->MaxSmoothedFrameRate = fps;
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}

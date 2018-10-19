@@ -14,7 +14,8 @@ std::map<std::string, pFunc> FUNC_MAP {
   { "fly", fnFly },
   { "spawn", fnSpawn },
   { "dump", fnDumpObjects },
-  { "get", fnGetObject }
+  { "get", fnGetObject },
+  { "setfps", fnSetFPS }
 };
 
 char * REPLY_ERROR = R"({ "error": true, "reason": "%s." })";
