@@ -12,6 +12,8 @@
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "1337"
 
+recv_handler recvHandler;
+
 int socketSend(SOCKET s, char * sendbuf, int len) {
   int iResult = send(s, sendbuf, len, 0);
   if (iResult == SOCKET_ERROR) {
@@ -22,18 +24,33 @@ int socketSend(SOCKET s, char * sendbuf, int len) {
   return 2;
 }
 
+void socketSession(void * pData) {
+  SOCKET ClientSocket = (SOCKET)pData;
+
+  char recvbuf[DEFAULT_BUFLEN];
+  int recvbuflen = DEFAULT_BUFLEN;
+
+  int iResult;
+  while((iResult = recv(ClientSocket, recvbuf, recvbuflen, 0)) > 0) {
+    recvHandler(ClientSocket, recvbuf, iResult);
+  }
+
+  shutdown(ClientSocket, SD_SEND);
+  closesocket(ClientSocket);
+  WSACleanup();
+}
+
 int socketListen(recv_handler onRecv) {
   WSADATA wsaData;
   int iResult;
+
+  recvHandler = onRecv;
 
   SOCKET ListenSocket = INVALID_SOCKET;
   SOCKET ClientSocket = INVALID_SOCKET;
 
   struct addrinfo *result = NULL;
   struct addrinfo hints;
-
-  char recvbuf[DEFAULT_BUFLEN];
-  int recvbuflen = DEFAULT_BUFLEN;
 
   iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
   if (iResult != 0) return 1;
@@ -57,7 +74,7 @@ int socketListen(recv_handler onRecv) {
       return 3;
   }
 
-  iResult = bind( ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+  iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
   if (iResult == SOCKET_ERROR) {
       freeaddrinfo(result);
       closesocket(ListenSocket);
@@ -74,40 +91,13 @@ int socketListen(recv_handler onRecv) {
       return 5;
   }
 
-  ClientSocket = accept(ListenSocket, NULL, NULL);
-  if (ClientSocket == INVALID_SOCKET) {
-      closesocket(ListenSocket);
-      WSACleanup();
-      return 6;
+  while(ClientSocket = accept(ListenSocket, NULL, NULL)) {
+    if (ClientSocket == INVALID_SOCKET) continue;
+
+    CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)socketSession, (void *)ClientSocket, NULL, NULL);
+
   }
 
   closesocket(ListenSocket);
-
-  do {
-
-      iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
-      if (iResult > 0) {
-
-        onRecv(ClientSocket, recvbuf, iResult);
-
-      }
-      else  {
-        closesocket(ClientSocket);
-        WSACleanup();
-        return 7;
-      }
-
-  } while (iResult > 0);
-
-  iResult = shutdown(ClientSocket, SD_SEND);
-  if (iResult == SOCKET_ERROR) {
-    closesocket(ClientSocket);
-    WSACleanup();
-    return 8;
-  }
-
-  // cleanup
-  closesocket(ClientSocket);
-  WSACleanup();
-  return 9;
+  return 6;
 }
