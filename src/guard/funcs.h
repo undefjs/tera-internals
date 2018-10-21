@@ -3,6 +3,9 @@ struct FN_RETURN {
   char * buffer;
 };
 
+char * getName(int);
+char * getNameByAddr(DWORD);
+char * getFullNameByAddr(DWORD);
 bool InitEngine();
 
 #include "include/json.hpp"
@@ -16,3 +19,6 @@ FN_RETURN fnSpawn(json);
 FN_RETURN fnDumpObjects(json);
 FN_RETURN fnGetObject(json);
 FN_RETURN fnSetFPS(json);
+FN_RETURN fnGetPlayer(json);
+FN_RETURN fnHideActor(json);
+FN_RETURN fnFreeCam(json);

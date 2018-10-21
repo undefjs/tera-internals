@@ -37,6 +37,11 @@ char * getName(int idx) {
   return "(null)";
 };
 
+char * getNameByAddr(DWORD addr) {
+  UObjectEx * obj = (UObjectEx *)addr;
+  return getName(obj->Name.Index);
+};
+
 char * getFullName(UObjectEx *obj) {
   if(obj->Class && !obj->Outer) {
     return getName(obj->Name.Index);
@@ -76,6 +81,11 @@ char * getFullName(UObjectEx *obj) {
   return "(null)";
 }
 
+char * getFullNameByAddr(DWORD addr) {
+  UObjectEx * obj = (UObjectEx *)addr;
+  return getFullName(obj);
+};
+
 UObjectEx * findObject(char *name) {
   for (int i = 0; i < GObjects->Count; i++) {
     if (!GObjects->Data[i]) { continue; }
@@ -86,6 +96,18 @@ UObjectEx * findObject(char *name) {
   }
 
   return NULL;
+}
+
+int getIndex(char * name) {
+  for (int i = 0; i < GNames->Count; i++) {
+    if (!GNames->Data[i]) { continue; }
+
+    char * objName = GNames->Data[i]->Name;
+    if (_stricmp(objName, name) == 0)
+      return i;
+  }
+
+  return -1;
 }
 
 void dumpObjects() {
@@ -216,6 +238,19 @@ FN_RETURN fnDumpObjects(json j) {
   dumpObjects();
 
   char buffer[MAX_PATH];
+
+  auto world = (UWorld*)findObject("World Start.TheWorld");
+  auto gameEngine = (UGameEngine*)findObject("GameEngine Transient.GameEngine");
+  auto pFnGetDebugName = (UFunction*)findObject("Function Engine.Actor.GetDebugName");
+
+  AActor_execGetDebugName_Parms GetDebugName_Parms;
+
+  strcpy(buffer, "dummy1");
+  world->ProcessEvent ( pFnGetDebugName, &GetDebugName_Parms, NULL );
+  strcpy(buffer, "dummy2");
+  gameEngine->ProcessEvent ( pFnGetDebugName, &GetDebugName_Parms, NULL );
+  strcpy(buffer, "dummy3");
+
   snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
 
   ret.error = false;
@@ -254,6 +289,82 @@ FN_RETURN fnSetFPS(json j) {
 
   char buffer[MAX_PATH];
   snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnGetPlayer(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto world = (UWorld*)findObject("World Start.TheWorld");
+  auto level = world->PersistentLevel; //(ULevel*)findObject("Level Start.TheWorld.PersistentLevel");
+  auto actors = level->Actors;
+
+  auto pFnGetDebugName = (UFunction*)findObject("Function Engine.Actor.GetDebugName");
+
+  char buffer[MAX_PATH];
+
+  for (int i = 0; i < actors.Count; i++) {
+    if (!actors.Data[i]) { continue; }
+
+    auto obj = actors.Data[i];
+    //if (_stricmp(getName(obj->Class->Name.Index), "S1SkeletalMeshActor") == 0) {
+      auto actor = (AS1Actor*)obj;
+
+      AActor_execGetDebugName_Parms GetDebugName_Parms;
+      actor->ProcessEvent ( pFnGetDebugName, &GetDebugName_Parms, NULL );
+      auto debugName = GetDebugName_Parms.ReturnValue;
+
+      snprintf(buffer, MAX_PATH, "Actor[%06i] => (%.2f, %.2f, %.2f) %s => %S", i, obj->Location.X, obj->Location.Y, obj->Location.Z, getFullName((UObjectEx*)obj), debugName);
+      OutputDebugStringA(buffer);
+    //}
+  }
+
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnHideActor(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto world = (UWorld*)findObject("World Start.TheWorld");
+  auto level = world->PersistentLevel; //(ULevel*)findObject("Level Start.TheWorld.PersistentLevel");
+  auto actors = level->Actors;
+
+  auto idx = j["index"].get<int>();
+  if(actors.Data[idx]) {
+    auto actor = (AS1Actor*)actors.Data[idx];
+    actor->bHidden = true;
+  }
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": true }");
+
+  ret.error = false;
+  ret.buffer = buffer;
+  return ret;
+}
+
+FN_RETURN fnFreeCam(json j) {
+  FN_RETURN ret = { 0 };
+  ret.error = true;
+
+  auto type = j["type"].get<std::string>();
+
+  //https://api.unrealengine.com/udk/Three/CameraTechnicalGuide.html
+  auto camera = (AS1PlayerCamera*)findObject("S1PlayerCamera Start.TheWorld.PersistentLevel.S1PlayerCamera");
+  char * camStyle = getName(camera->CameraStyle.Index); //FirstPerson, ThirdPerson, FreeCam, etc..
+  camera->CameraStyle.Index = getIndex((char *)(type.c_str()));
+
+  char buffer[MAX_PATH];
+  snprintf(buffer, MAX_PATH, "{ \"ok\": \"%s\" }", camStyle);
 
   ret.error = false;
   ret.buffer = buffer;

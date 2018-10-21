@@ -15,7 +15,10 @@ std::map<std::string, pFunc> FUNC_MAP {
   { "spawn", fnSpawn },
   { "dump", fnDumpObjects },
   { "get", fnGetObject },
-  { "setfps", fnSetFPS }
+  { "setfps", fnSetFPS },
+  { "getplayer", fnGetPlayer },
+  { "hide", fnHideActor },
+  { "cam", fnFreeCam }
 };
 
 char * REPLY_ERROR = R"({ "error": true, "reason": "%s." })";
@@ -59,10 +62,51 @@ void setupServer() {
   socketListen(onReceive);
 }
 
+#define PROCESS_EVENT 0x00722EE0
+
+char dbgBuffer[MAX_PATH];
+DWORD patchReturn;
+
+DWORD pMyThis = NULL;
+DWORD pMyFunc = NULL;
+char * szThis;
+char * szFunc;
+
+void __declspec(naked) hProcessEvent() {
+  __asm {
+    mov [pMyThis], ecx
+    push [esp + 4]
+    pop [pMyFunc]
+    pushad
+  }
+
+  szThis = getFullNameByAddr(pMyThis);
+  szFunc = getNameByAddr(pMyFunc);
+
+  //snprintf(dbgBuffer, MAX_PATH, "ProcessEvent %08X->%08X", pMyThis, pMyFunc);
+  snprintf(dbgBuffer, MAX_PATH, "ProcessEvent %s->%s()", szThis, szFunc);
+  OutputDebugStringA(dbgBuffer);
+
+  __asm {
+    popad
+    push ebp
+    mov ebp, esp
+    push 0xFF
+    jmp patchReturn
+  }
+}
+
+void hookPE() {
+  *((BYTE *)(PROCESS_EVENT)) = 0xE9; //JMP
+  *((DWORD *)(PROCESS_EVENT + 1)) = (DWORD)&hProcessEvent - PROCESS_EVENT - 5;
+  patchReturn = PROCESS_EVENT + 5;
+}
+
 BOOL WINAPI DllMain(HMODULE hModule, DWORD ulReason, LPVOID lpReserved) {
   switch (ulReason) {
   case DLL_PROCESS_ATTACH: {
     if(!InitEngine()) return FALSE;
+    //hookPE();
     CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)setupServer, NULL, 0, NULL);
     break;
   }

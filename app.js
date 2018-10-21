@@ -48,7 +48,7 @@ async function injectDLL() {
   
     function replHandler(cmd, context, filename, callback) {
       s.once('data', data => callback(null, JSON.parse(data)));
-      s.write(cmd);
+      s.write(cmd.replace(/\n/g, '') + '\n');
     }
     
     const replServer = repl.start({ prompt: '> ', eval: replHandler });
